@@ -59,15 +59,13 @@ function render(document) {
 
             const dynamicElementInstance = new customElementConstructor();
 
+            dynamicElementInstance._slot = elements[i].innerHTML;
+
             const attributes = elements[i].attributes;
             for (let j = 0; j < attributes.length; j++) {
                 const attribute = attributes[j];
                 dynamicElementInstance.setAttribute(attribute.name, attribute.value);
             }
-
-            dynamicElementInstance._slot = elements[i].innerHTML;
-
-            dynamicElementInstance.requestRender();
 
             // Assign the new element to the parent node
             elements[i].parentNode.insertBefore(dynamicElementInstance, elements[i].nextSibling);
