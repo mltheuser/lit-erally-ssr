@@ -1,12 +1,10 @@
-// test.js
-
 import { startDevServer } from '@web/dev-server';
 import Router from '@koa/router';
 
-import { html } from './dyn.js'
-import { hydrate, render } from './dynServer.js';
+import { html } from './lib/crossPlatform/index.js'
+import { render, hydrate } from './lib/server/index.js'
 
-import './SimpleButton.js'
+import './components/SimpleButton.js'
 
 async function main() {
     const server = await startDevServer({

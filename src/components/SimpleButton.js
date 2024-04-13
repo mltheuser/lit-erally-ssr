@@ -1,30 +1,27 @@
-// SimpleButton.js
-import { css, customElements, DynamicElement, html } from './dyn.js';
+import { css, customElements, WebComponent, html } from '../webcomponent-lib/crossPlatform/index.js';
 
 import './CounterList.js'
 
-class SimpleButton extends DynamicElement {
+class SimpleButton extends WebComponent {
 
     static styles = css`p{ color: blue }`;
 
-    // property
     static properties = {
         text: String,
     };
 
-    // state
     static state = {
         clickCounter: 0,
         dynamicText: "can change"
     };
 
+    static getScriptUrl() {
+        return "src/components/SimpleButton.js";
+    }
+
     constructor() {
         super()
         this.registerSignalHandler("message", (data) => { console.log(data); this.dynamicText = data.text })
-    }
-
-    static getScriptUrl() {
-        return "src/SimpleButton.js";
     }
 
     handleClick() {
@@ -48,5 +45,4 @@ class SimpleButton extends DynamicElement {
 
 }
 
-// Register the SimpleButton custom element
 customElements.define("simple-button", SimpleButton);

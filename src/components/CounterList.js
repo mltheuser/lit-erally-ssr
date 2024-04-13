@@ -1,11 +1,9 @@
-// CounterList.js
-import { customElements, DynamicElement, html, css } from './dyn.js';
+import { css, customElements, WebComponent, html } from '../webcomponent-lib/crossPlatform/index.js';
 
-class CounterList extends DynamicElement {
+class CounterList extends WebComponent {
 
     static styles = css`p { color: red }`;
 
-    // property
     static properties = {
         counts: String,
     };
@@ -15,11 +13,10 @@ class CounterList extends DynamicElement {
     }
 
     static getScriptUrl() {
-        return "src/CounterList.js";
+        return "src/components/CounterList.js";
     }
 
     handleClick() {
-        console.log("Clicked");
         this.counter++;
         this.signal("message", {text: "Hello from child"})
     }

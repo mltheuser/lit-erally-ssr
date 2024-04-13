@@ -1,64 +1,31 @@
-// dyn.js
-import { css } from 'lit'
+import { HTMLElement } from "./html-elements.js";
+import JSONParser from './json-parser.js'
 
-function isClient() {
-    return typeof window !== 'undefined' && window.HTMLElement && window.customElements
-}
+export default class WebComponent extends HTMLElement {
 
-let HTMLElement, customElements;
-let JSDOM;
-
-if (isClient()) {
-    HTMLElement = window.HTMLElement;
-    customElements = window.customElements;
-} else {
-    const jsDomImport = await import('jsdom');
-
-    JSDOM = jsDomImport.JSDOM;
-
-    const dom = new JSDOM();
-    const window = dom.window;
-
-    HTMLElement = window.HTMLElement;
-    customElements = window.customElements;
-}
-
-function safeJSONParse(value) {
-    try {
-        return JSON.parse(value)
-    } catch {
-        return value
-    }
-}
-
-class DynamicElement extends HTMLElement {
-
-    _signalHandlers = {}
+    #signalHandlers = {};
+    #slot = '';
 
     constructor() {
         super();
-        this._slot = this.extractSlotContent();
+        this.#slot = this.extractSlotContent();
         this.initializeState();
         this.initializeProperties();
     }
 
     extractSlotContent() {
-        const slotStartComment = '<slot>';
-        const slotEndComment = '</slot>';
-        const innerHTML = this.innerHTML;
-        const startIndex = innerHTML.indexOf(slotStartComment);
-        const endIndex = innerHTML.indexOf(slotEndComment);
-
-        if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-            const slotContent = innerHTML.slice(startIndex + slotStartComment.length, endIndex);
+        const slotElement = this.querySelector('slot');
+    
+        if (slotElement) {
+            const slotContent = slotElement.innerHTML;
             return slotContent.trim();
         } else {
             return this.innerHTML;
         }
     }
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        this[name] = safeJSONParse(newValue);
+    attributeChangedCallback(name, _, newValue) {
+        this[name] = JSONParser.safeJSONParse(newValue);
     }
 
     initializeProperties() {
@@ -66,18 +33,18 @@ class DynamicElement extends HTMLElement {
             return
         }
 
-        for (const [propName, propType] of Object.entries(this.constructor.properties)) {
-            const attrValue = safeJSONParse(this.getAttribute(propName));
+        for (const [propName, _] of Object.entries(this.constructor.properties)) {
+            const attrValue = JSONParser.safeJSONParse(this.getAttribute(propName));
             if (attrValue !== null) {
-                this[`_${propName}`] = attrValue;
+                this[`#${propName}`] = attrValue;
             }
             if (!Object.prototype.hasOwnProperty.call(this, propName)) {
                 Object.defineProperty(this, propName, {
                     get() {
-                        return this[`_${propName}`];
+                        return this[`#${propName}`];
                     },
                     set(value) {
-                        this[`_${propName}`] = value;
+                        this[`#${propName}`] = value;
                         this.requestRender();
                     },
                 });
@@ -95,13 +62,13 @@ class DynamicElement extends HTMLElement {
         }
         for (const [stateName, stateValue] of Object.entries(this.constructor.state)) {
             if (!Object.prototype.hasOwnProperty.call(this, stateName)) {
-                this[`_${stateName}`] = stateValue;
+                this[`#${stateName}`] = stateValue;
                 Object.defineProperty(this, stateName, {
                     get() {
-                        return this[`_${stateName}`];
+                        return this[`#${stateName}`];
                     },
                     set(value) {
-                        this[`_${stateName}`] = value;
+                        this[`#${stateName}`] = value;
                         this.requestRender();
                     },
                 });
@@ -113,8 +80,8 @@ class DynamicElement extends HTMLElement {
         let currentElement = this;
 
         while (currentElement) {
-            if (currentElement instanceof DynamicElement && currentElement._signalHandlers && currentElement._signalHandlers[signalName]) {
-                currentElement._signalHandlers[signalName].call(currentElement, data);
+            if (currentElement instanceof WebComponent && currentElement.#signalHandlers && currentElement.#signalHandlers[signalName]) {
+                currentElement.#signalHandlers[signalName].call(currentElement, data);
             }
 
             currentElement = currentElement.parentElement;
@@ -122,7 +89,7 @@ class DynamicElement extends HTMLElement {
     }
 
     registerSignalHandler(signalName, handler) {
-        this._signalHandlers[signalName] = handler
+        this.#signalHandlers[signalName] = handler
     }
 
     requestRender() {
@@ -130,14 +97,36 @@ class DynamicElement extends HTMLElement {
         const newDocument = htmlResult.document;
 
         this.insertChildrenIntoSlot(newDocument)
+        this.appendPreprocessedStyleTag(newDocument);
+        this.doMinimalUpdateToActiveDocument(newDocument);
+        this.registerEventListeners(htmlResult);
+    }
 
-        // append style tag with ${this.preprocessStyles()} inside.
-        const styleElement = newDocument.createElement('style');
-        styleElement.textContent = this.preprocessStyles();
-        newDocument.body.appendChild(styleElement);
 
+    registerEventListeners(htmlResult) {
+        const eventListeners = htmlResult.eventListeners; // each list item has form: { eventName: string, fn: Function }
+        for (let i = 0; i < eventListeners.length; ++i) {
+            console.log(this.innerHTML);
+            const target = this.querySelector(`[data-event-id="${i}"]`);
+            const { eventName, fn } = eventListeners[i];
+
+            // remove the "on" prefix from the event name
+            const eventNameWithoutOn = eventName.slice(2);
+
+            if (target.hasOwnProperty('##old' + eventName)) {
+                // remove all existing event listeners for this event from target
+                target.removeEventListener(eventNameWithoutOn, target['##old' + eventName]);
+            }
+
+            // register fn as handler for event
+            target['##old' + eventName] = fn;
+            target.addEventListener(eventNameWithoutOn, fn);
+        }
+    }
+
+    doMinimalUpdateToActiveDocument(newDocument) {
         let newHtmlPointer = newDocument.body;
-        let oldHtmlPointer = this
+        let oldHtmlPointer = this;
 
         const comp = (oldPointer, newPointer) => {
             // Get the child elements of both pointers
@@ -182,7 +171,7 @@ class DynamicElement extends HTMLElement {
                                 }
                             } else {
                                 // If the attributes are different:
-                                oldChild.innerHTML = newChild.innerHTML
+                                oldChild.innerHTML = newChild.innerHTML;
 
                                 // Update attributes one by one on the element
                                 for (let i = 0; i < newChild.attributes.length; i++) {
@@ -218,27 +207,13 @@ class DynamicElement extends HTMLElement {
         };
 
         comp(oldHtmlPointer, newHtmlPointer);
-
-        const eventListeners = htmlResult.eventListeners // each list item has form: { eventName: string, fn: Function }
-        for (let i = 0; i < eventListeners.length; ++i) {
-            console.log(this.innerHTML)
-            const target = this.querySelector(`[data-event-id="${i}"]`);
-            const { eventName, fn } = eventListeners[i];
-
-            // remove the "on" prefix from the event name
-            const eventNameWithoutOn = eventName.slice(2);
-
-            if (target.hasOwnProperty('__old' + eventName)) {
-                // remove all existing event listeners for this event from target
-                target.removeEventListener(eventNameWithoutOn, target['__old' + eventName]);
-            }
-
-            // register fn as handler for event
-            target['__old' + eventName] = fn;
-            target.addEventListener(eventNameWithoutOn, fn);
-        }
     }
 
+    appendPreprocessedStyleTag(newDocument) {
+        const styleElement = newDocument.createElement('style');
+        styleElement.textContent = this.preprocessStyles();
+        newDocument.body.appendChild(styleElement);
+    }
 
     preprocessStyles() {
         if (this.constructor['styles']) {
@@ -269,9 +244,9 @@ class DynamicElement extends HTMLElement {
     insertChildrenIntoSlot(document) {
         // Find the slot element
         const slot = document.querySelector('slot');
-        if (slot && this._slot) {
+        if (slot && this.#slot) {
             // Set the slot's innerHTML to the desired content
-            slot.innerHTML = this._slot;
+            slot.innerHTML = this.#slot;
         }
     }
 
@@ -279,65 +254,3 @@ class DynamicElement extends HTMLElement {
         return '';
     }
 }
-
-function html(strings, ...values) {
-    const attributeRegex = /=$/;
-    const eventListeners = [];
-
-    let htmlString = strings.reduce((result, string, i) => {
-        let value = values[i];
-
-        if (value === undefined) {
-            return result + string;
-        }
-
-        if (attributeRegex.test(string.trim())) {
-            if (typeof value === 'function') {
-                const eventAttrIndex = string.lastIndexOf(' ');
-                const eventAttr = string.substr(eventAttrIndex).trim();
-                const eventName = eventAttr.slice(0, -1).toLowerCase();
-                eventListeners.push({ eventName, fn: value });
-                return result + string.slice(0, eventAttrIndex) + ` data-event-id="${eventListeners.length - 1}"`;
-            } else {
-                value = JSON.stringify(value);
-            }
-        } else if (Array.isArray(value)) {
-            value = value.map(item => String(item)).join('');
-        } else {
-            value = String(value);
-        }
-
-        return result + string + value;
-    }, '');
-
-    let temporaryDocument;
-
-    if (!isClient()) {
-        // Running on Node.js
-        const dom = new JSDOM(htmlString);
-        temporaryDocument = dom.window.document;
-
-        // Check if the parsed HTML is valid
-        if (temporaryDocument.body.innerHTML === '') {
-            throw new Error('Invalid HTML string');
-        }
-    } else {
-        // Running in the browser
-        const parser = new DOMParser();
-        temporaryDocument = parser.parseFromString(htmlString, 'text/html');
-
-        // Check if the parsed HTML is valid
-        if (temporaryDocument.body.innerHTML === '') {
-            throw new Error('Invalid HTML string');
-        }
-    }
-
-    const testHtml = temporaryDocument.body.innerHTML
-
-    return {
-        document: temporaryDocument,
-        eventListeners: eventListeners,
-    }
-}
-
-export { DynamicElement, customElements, html, css };
