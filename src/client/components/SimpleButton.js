@@ -1,4 +1,4 @@
-import { css, customElements, WebComponent, html } from '../webcomponent-lib/crossPlatform/index.js';
+import { css, customElements, WebComponent, html } from '../../webcomponent-lib/crossPlatform/index.js';
 
 import './CounterList.js'
 
@@ -16,7 +16,7 @@ class SimpleButton extends WebComponent {
     };
 
     static getScriptUrl() {
-        return "src/components/SimpleButton.js";
+        return "src/client/components/SimpleButton.js";
     }
 
     constructor() {

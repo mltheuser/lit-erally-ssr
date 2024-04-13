@@ -1,4 +1,4 @@
-import { css, customElements, WebComponent, html } from '../webcomponent-lib/crossPlatform/index.js';
+import { css, customElements, WebComponent, html } from '../../webcomponent-lib/crossPlatform/index.js';
 
 class CounterList extends WebComponent {
 
@@ -13,7 +13,7 @@ class CounterList extends WebComponent {
     }
 
     static getScriptUrl() {
-        return "src/components/CounterList.js";
+        return "src/client/components/CounterList.js";
     }
 
     handleClick() {

@@ -1,10 +1,7 @@
 import { startDevServer } from '@web/dev-server';
-import Router from '@koa/router';
+import router from './server/config/router-config.js'
 
-import { html } from './lib/crossPlatform/index.js'
-import { render, hydrate } from './lib/server/index.js'
-
-import './components/SimpleButton.js'
+import './client/components/SimpleButton.js'
 
 async function main() {
     const server = await startDevServer({
@@ -12,32 +9,25 @@ async function main() {
             rootDir: "./",
             nodeResolve: true,
             port: 3000,
+            middlewares: [
+                function (context, next) {
+                    if (context.url.startsWith('/src/server/')) {
+                        context.status = 404;
+                        context.body = 'Not Found';
+                    } else {
+                        return next();
+                    }
+                },
+            ],
         },
         readCliArgs: true,
     });
 
     const app = server.koaApp;
-    const router = new Router();
 
-    router.get('/', async (ctx) => {
-        const htmlString = html`
-            <p>text</p>
-            <div>
-                <simple-button text=${[1, 2, 3]}>
-                    <span>Let's have some different text!</span>
-                    <counter-list counts="[129, 130]"></counter-list>
-                </simple-button>
-            </div>
-        `
-        const htmlRender = render(hydrate(htmlString));
-        console.log("----")
-        console.log(htmlRender)
-        ctx.type = 'text/html';
-        ctx.body = htmlRender;
-    });
-
-    app
-        .use(router.routes())
+    // Mount the router middleware
+    app.use(router.routes());
+    app.use(router.allowedMethods());
 }
 
 main();
