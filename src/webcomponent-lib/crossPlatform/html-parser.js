@@ -1,15 +1,26 @@
 import Platform from './platform.js'
 import { JSDOM } from './html-elements.js'
 
+class HtmlObject {
+    constructor(document, eventListeners = {}) {
+        this.document = document
+        this.eventListeners = eventListeners
+    }
+
+    toString() {
+        return this.document.body.innerHTML
+    }
+}
+
 export default function html(strings, ...values) {
 
     var { htmlStringWithParsedValues, eventListeners } = parseValues(strings, values);
     const temporaryDocument = parseAsDocument(htmlStringWithParsedValues);
 
-    return {
-        document: temporaryDocument,
-        eventListeners: eventListeners,
-    }
+    return new HtmlObject(
+        temporaryDocument,
+        eventListeners,
+    )
 }
 
 function isAttribute(value) {
@@ -47,14 +58,38 @@ function parseValues(strings, values) {
                 value = JSON.stringify(value);
             }
         } else if (Array.isArray(value)) {
-            value = value.map(item => String(item)).join('');
+            value = value.map(item => {
+                if (item instanceof HtmlObject) {
+                    return parseHtmlObject(item, eventListeners);
+                } else {
+                    return String(item);
+                }
+            }).join('');
         } else {
-            value = String(value);
+            if (value instanceof HtmlObject) {
+                value = parseHtmlObject(value, eventListeners);
+            } else {
+                value = String(value);
+            }
         }
 
         return result + htmlString + value;
     }, '');
     return { htmlStringWithParsedValues, eventListeners };
+}
+
+function parseHtmlObject(htmlObject, eventListeners) {
+    const htmlContent = htmlObject.toString();
+    const currentLength = eventListeners.length;
+    eventListeners.push(...htmlObject.eventListeners);
+
+    // Find all data-event-id attributes and update the id to the correct new index
+    const updatedHtmlContent = htmlContent.replace(/data-event-id="(\d+)"/g, (match, id) => {
+        const newId = parseInt(id, 10) + currentLength;
+        return `data-event-id="${newId}"`;
+    });
+
+    return updatedHtmlContent;
 }
 
 function parseAsDocument(htmlString) {

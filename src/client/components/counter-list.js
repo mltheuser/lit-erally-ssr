@@ -1,5 +1,7 @@
 import { css, customElements, WebComponent, html } from '../../webcomponent-lib/crossPlatform/index.js';
 
+import './list-item.js'
+
 class CounterList extends WebComponent {
 
     static styles = css`p { color: red }`;
@@ -13,7 +15,7 @@ class CounterList extends WebComponent {
     }
 
     static getScriptUrl() {
-        return "src/client/components/CounterList.js";
+        return "src/client/components/counter-list.js";
     }
 
     handleClick() {
@@ -24,7 +26,7 @@ class CounterList extends WebComponent {
     render() {
         return html`
               <ul>
-                ${(this.counts.map(c => `<li>A + ${c}</li>`)).join('')}
+                ${this.counts.map(c => html`<li><list-item><span>A + ${c}</span></span></list-item></li>`)}
               </ul>
               <p>Thats all folks</p>
               <p>${this.counter}</p>

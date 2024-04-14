@@ -1,7 +1,7 @@
 import { startDevServer } from '@web/dev-server';
 import router from './server/config/router-config.js'
 
-import './client/components/SimpleButton.js'
+import './client/components/simple-button.js'
 
 async function main() {
     const server = await startDevServer({

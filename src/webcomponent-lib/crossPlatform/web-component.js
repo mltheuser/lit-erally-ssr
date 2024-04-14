@@ -1,5 +1,11 @@
-import { HTMLElement } from "./html-elements.js";
+import { HTMLElement, customElements } from "./html-elements.js";
 import JSONParser from './json-parser.js'
+
+function assert(condition, message) {
+    if (!condition) {
+        throw message || "Assertion failed";
+    }
+}
 
 export default class WebComponent extends HTMLElement {
 
@@ -8,20 +14,25 @@ export default class WebComponent extends HTMLElement {
 
     constructor() {
         super();
-        this.#slot = this.extractSlotContent();
+        this.saveSlotContent();
         this.initializeState();
         this.initializeProperties();
     }
 
-    extractSlotContent() {
+    connectedCallback() {
+        this.requestRender()
+    }
+
+    saveSlotContent() {
         const slotElement = this.querySelector('slot');
-    
+
         if (slotElement) {
             const slotContent = slotElement.innerHTML;
-            return slotContent.trim();
+            this.#slot = slotContent.trim();
         } else {
-            return this.innerHTML;
+            this.#slot = this.innerHTML;
         }
+
     }
 
     attributeChangedCallback(name, _, newValue) {
@@ -94,11 +105,17 @@ export default class WebComponent extends HTMLElement {
 
     requestRender() {
         const htmlResult = this.render();
+        console.log("----")
+        console.log(htmlResult.toString())
         const newDocument = htmlResult.document;
 
         this.insertChildrenIntoSlot(newDocument)
         this.appendPreprocessedStyleTag(newDocument);
+        console.log("----")
+        console.log(newDocument.body.innerHTML)
         this.doMinimalUpdateToActiveDocument(newDocument);
+        console.log("----")
+        console.log(this.innerHTML)
         this.registerEventListeners(htmlResult);
     }
 
@@ -121,92 +138,103 @@ export default class WebComponent extends HTMLElement {
             // register fn as handler for event
             target['##old' + eventName] = fn;
             target.addEventListener(eventNameWithoutOn, fn);
+
+            // now remove the data-event-id="${i}" attribute
+            target.removeAttribute("data-event-id")
         }
     }
 
     doMinimalUpdateToActiveDocument(newDocument) {
         let newHtmlPointer = newDocument.body;
+        console.log("newHtmlPointer.outerHTML");
+        console.log(newHtmlPointer.outerHTML);
+        // => <body><ul><li>A + 129</li></ul></body>
+
         let oldHtmlPointer = this;
+        console.log("oldHtmlPointer.outerHTML");
+        console.log(oldHtmlPointer.outerHTML);
+        // => <counter-list counts="[129, 130]"></counter-list>
+
+        // Get the tag name and attributes of oldHtmlPointer
+        let oldTagName = oldHtmlPointer.tagName.toLowerCase();
+        let oldAttributes = oldHtmlPointer.attributes;
+
+        // Create a new element with the same tag name
+        let newElement = newDocument.createElement(oldTagName);
+
+        // Set the attributes of the new element to match those of oldHtmlPointer
+        for (let i = 0; i < oldAttributes.length; i++) {
+            let attr = oldAttributes[i];
+            newElement.setAttribute(attr.name, attr.value);
+        }
+
+        // Append the contents of newHtmlPointer to the new element
+        while (newHtmlPointer.firstChild) {
+            newElement.appendChild(newHtmlPointer.firstChild);
+        }
+
+        // Replace newHtmlPointer with the new element
+        newHtmlPointer.parentNode.replaceChild(newElement, newHtmlPointer);
+
+        console.log("Updated newHtmlPointer.outerHTML");
+        console.log(newElement.outerHTML);
+        // => <counter-list counts="[129, 130]"><ul><li>A + 129</li></ul></counter-list>
 
         const comp = (oldPointer, newPointer) => {
-            // Get the child elements of both pointers
-            const oldChildren = oldPointer.children;
-            const newChildren = newPointer.children;
+            assert(oldPointer && newPointer)
+            assert(oldPointer.nodeType === newPointer.nodeType)
+            if (oldPointer.nodeType === 3) {
+                oldPointer.textContent = newPointer.textContent
+                return
+            }
+            if (oldPointer.nodeType !== 1) {
+                oldPointer.outerHTML = newPointer.outerHTML
+                return
+            } else {
+                if (oldPointer.outerHTML === newPointer.outerHTML) {
+                    return
+                }
 
-            // Iterate over the child elements
-            for (let i = 0; i < Math.max(oldChildren.length, newChildren.length); i++) {
-                const oldChild = oldChildren[i];
-                const newChild = newChildren[i];
+                assert(oldPointer.tagName === newPointer.tagName)
 
-                // Check if both have the same tag
-                if (oldChild && newChild && oldChild.tagName === newChild.tagName) {
-                    if (oldChild.outerHTML !== newChild.outerHTML) {
-                        // If outerHTML differs:
-                        // Check if only the tag and attributes are the same and only the innerHTML differs.
-                        if (oldChild.tagName === newChild.tagName && oldChild.attributes.length === newChild.attributes.length) {
-                            let sameAttributes = true;
-                            for (let i = 0; i < oldChild.attributes.length; i++) {
-                                const oldAttr = oldChild.attributes[i];
-                                const newAttr = newChild.attributes[i];
-                                if (oldAttr.name !== newAttr.name || oldAttr.value !== newAttr.value) {
-                                    sameAttributes = false;
-                                    break;
-                                }
-                            }
+                // Update attributes one by one on the element
+                updateElementAttributes(newPointer, oldPointer);
 
-                            if (sameAttributes) {
-                                // Check if the element is a custom web component
-                                if (customElements.get(oldChild.tagName.toLowerCase())) {
-                                    // If it is a custom element, leave the old element alone
-                                    return;
-                                } else {
-                                    // If it is not a custom element, check if it has children
-                                    if (oldChild.children.length === 0) {
-                                        // If the element doesn't have children, replace its innerHTML
-                                        oldChild.innerHTML = newChild.innerHTML;
-                                    } else {
-                                        // If the element has children, go one level lower for the comparison
-                                        comp(oldChild, newChild);
-                                    }
-                                }
-                            } else {
-                                // If the attributes are different:
-                                oldChild.innerHTML = newChild.innerHTML;
+                // Get the child elements of both pointers
+                const oldChildren = Array.from(oldPointer.childNodes);
+                const newChildren = Array.from(newPointer.childNodes);
 
-                                // Update attributes one by one on the element
-                                for (let i = 0; i < newChild.attributes.length; i++) {
-                                    const newAttr = newChild.attributes[i];
-                                    oldChild.setAttribute(newAttr.name, newAttr.value);
-                                }
-                                // Remove any attributes that are not present in the new element
-                                for (let i = 0; i < oldChild.attributes.length; i++) {
-                                    const oldAttr = oldChild.attributes[i];
-                                    if (!newChild.hasAttribute(oldAttr.name)) {
-                                        oldChild.removeAttribute(oldAttr.name);
-                                    }
-                                }
-                            }
-                        } else {
-                            // If the tag names are different, replace the element with the new one
-                            oldChild.parentNode.replaceChild(newChild.cloneNode(true), oldChild);
-                        }
+                // check that both contain the exact same tags
+                if (oldChildren.length !== newChildren.length) {
+                    oldPointer.innerHTML = newPointer.innerHTML
+                    return
+                }
+                let hasSameTags = true
+                for (let i = 0; i < oldChildren.length; ++i) {
+                    if (oldChildren[i].tagName !== newChildren[i].tagName && oldChildren[i].nodeType !== newChildren[i].nodeType) {
+                        hasSameTags = false
+                        break
                     }
-                } else if (newChild) {
-                    // New element was added, insert it at the current position
-                    if (oldChild) {
-                        oldChild.parentNode.insertBefore(newChild.cloneNode(true), oldChild);
-                    } else {
-                        oldPointer.appendChild(newChild.cloneNode(true));
+                }
+                if (!hasSameTags) {
+                    oldPointer.innerHTML = newPointer.innerHTML
+                    return
+                }
+
+                // Now if it has children we run the compare action on each of them if not we just replace the inner html
+                for (let i = 0; i < oldChildren.length; i++) {
+                    if (oldChildren[i].tagName && customElements.get(oldChildren[i].tagName.toLowerCase())) {
+                        // Update attributes one by one on the element
+                        updateElementAttributes(newChildren[i], oldChildren[i]);
+                        continue
                     }
-                } else if (oldChild) {
-                    // Old element needs to be removed
-                    oldChild.parentNode.removeChild(oldChild);
-                    i--; // Adjust the index since an element was removed
+                    comp(oldChildren[i], newChildren[i])
                 }
             }
-        };
+        }
 
-        comp(oldHtmlPointer, newHtmlPointer);
+        comp(oldHtmlPointer, newElement);
+
     }
 
     appendPreprocessedStyleTag(newDocument) {
@@ -252,5 +280,21 @@ export default class WebComponent extends HTMLElement {
 
     render() {
         return '';
+    }
+}
+
+function updateElementAttributes(newPointer, oldPointer) {
+    for (let i = 0; i < newPointer.attributes.length; i++) {
+        const newAttr = newPointer.attributes[i];
+        if (!oldPointer.hasAttribute(newAttr.name) || oldPointer.getAttribute(newAttr.name) !== newAttr.value) {
+            oldPointer.setAttribute(newAttr.name, newAttr.value);
+        }
+    }
+    // Remove any attributes that are not present in the new element
+    for (let i = 0; i < oldPointer.attributes.length; i++) {
+        const oldAttr = oldPointer.attributes[i];
+        if (!newPointer.hasAttribute(oldAttr.name)) {
+            oldPointer.removeAttribute(oldAttr.name);
+        }
     }
 }

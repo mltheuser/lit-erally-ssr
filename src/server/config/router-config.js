@@ -17,6 +17,9 @@ router.get('/', async (ctx) => {
         </div>
     `
     const htmlRender = render(hydrate(htmlString));
+
+    console.log(htmlRender)
+
     ctx.type = 'text/html';
     ctx.body = htmlRender;
 });
