@@ -39,6 +39,7 @@ class SimpleButton extends WebComponent {
               <p>${this.text}: ${this.clickCounter} times</p>
               <p>${this.dynamicText}</p>
               <slot></slot>
+              <p>${html`<div onclick=${() => console.log("That was clicked")}>Hello World</div>`}</p>
               <counter-list counts=${counts}></counter-list>
           `;
     }

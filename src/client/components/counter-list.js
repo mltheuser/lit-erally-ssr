@@ -26,7 +26,7 @@ class CounterList extends WebComponent {
     render() {
         return html`
               <ul>
-                ${this.counts.map(c => html`<li><list-item><span>A + ${c}</span></span></list-item></li>`)}
+                ${this.counts.map(c => html`<li><list-item>A + ${c}</list-item></li>`)}
               </ul>
               <p>Thats all folks</p>
               <p>${this.counter}</p>
