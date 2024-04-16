@@ -39,6 +39,20 @@ export default class WebComponent extends HTMLElement {
         this[name] = JSONParser.safeJSONParse(newValue);
     }
 
+    defineProperty(propName) {
+        if (!Object.prototype.hasOwnProperty.call(this, propName)) {
+            Object.defineProperty(this, propName, {
+                get() {
+                    return this[`#${propName}`];
+                },
+                set(value) {
+                    this[`#${propName}`] = value;
+                    this.requestRender();
+                },
+            });
+        }
+    }
+
     initializeProperties() {
         if (!this.constructor.properties) {
             return
@@ -49,22 +63,8 @@ export default class WebComponent extends HTMLElement {
             if (attrValue !== null) {
                 this[`#${propName}`] = attrValue;
             }
-            if (!Object.prototype.hasOwnProperty.call(this, propName)) {
-                Object.defineProperty(this, propName, {
-                    get() {
-                        return this[`#${propName}`];
-                    },
-                    set(value) {
-                        this[`#${propName}`] = value;
-                        this.requestRender();
-                    },
-                });
-            }
+            this.defineProperty(propName);
         }
-    }
-
-    static get observedAttributes() {
-        return Object.keys(this.properties);
     }
 
     initializeState() {
@@ -74,17 +74,13 @@ export default class WebComponent extends HTMLElement {
         for (const [stateName, stateValue] of Object.entries(this.constructor.state)) {
             if (!Object.prototype.hasOwnProperty.call(this, stateName)) {
                 this[`#${stateName}`] = stateValue;
-                Object.defineProperty(this, stateName, {
-                    get() {
-                        return this[`#${stateName}`];
-                    },
-                    set(value) {
-                        this[`#${stateName}`] = value;
-                        this.requestRender();
-                    },
-                });
+                this.defineProperty(stateName);
             }
         }
+    }
+
+    static get observedAttributes() {
+        return Object.keys(this.properties);
     }
 
     signal(signalName, data) {
@@ -105,23 +101,17 @@ export default class WebComponent extends HTMLElement {
 
     requestRender() {
         const htmlResult = this.render();
-        console.log("----")
-        console.log(htmlResult.toString())
         const newDocument = htmlResult.document;
 
         this.insertChildrenIntoSlot(newDocument)
         this.appendPreprocessedStyleTag(newDocument);
-        console.log("----")
-        console.log(newDocument.body.innerHTML)
         this.doMinimalUpdateToActiveDocument(newDocument);
-        console.log("----")
-        console.log(this.innerHTML)
         this.registerEventListeners(htmlResult);
     }
 
 
     registerEventListeners(htmlResult) {
-        const eventListeners = htmlResult.eventListeners; // each list item has form: { eventName: string, fn: Function }
+        const eventListeners = htmlResult.eventListeners;
         for (let i = 0; i < eventListeners.length; ++i) {
             console.log(this.innerHTML);
             const target = this.querySelector(`[data-event-id="${i}"]`);
@@ -146,14 +136,7 @@ export default class WebComponent extends HTMLElement {
 
     doMinimalUpdateToActiveDocument(newDocument) {
         let newHtmlPointer = newDocument.body;
-        console.log("newHtmlPointer.outerHTML");
-        console.log(newHtmlPointer.outerHTML);
-        // => <body><ul><li>A + 129</li></ul></body>
-
         let oldHtmlPointer = this;
-        console.log("oldHtmlPointer.outerHTML");
-        console.log(oldHtmlPointer.outerHTML);
-        // => <counter-list counts="[129, 130]"></counter-list>
 
         // Get the tag name and attributes of oldHtmlPointer
         let oldTagName = oldHtmlPointer.tagName.toLowerCase();
@@ -175,10 +158,6 @@ export default class WebComponent extends HTMLElement {
 
         // Replace newHtmlPointer with the new element
         newHtmlPointer.parentNode.replaceChild(newElement, newHtmlPointer);
-
-        console.log("Updated newHtmlPointer.outerHTML");
-        console.log(newElement.outerHTML);
-        // => <counter-list counts="[129, 130]"><ul><li>A + 129</li></ul></counter-list>
 
         const comp = (oldPointer, newPointer) => {
             assert(oldPointer && newPointer)
@@ -245,7 +224,7 @@ export default class WebComponent extends HTMLElement {
 
     preprocessStyles() {
         if (this.constructor['styles']) {
-            const styles = this.constructor['styles'].cssText;
+            const styles = this.constructor['styles'];
             const tagNames = this.getParentTagNames();
             const preprocessedStyles = styles.replace(/([^}{]+)({[^}]+})/g, (match, selector, rules) => {
                 const preprocessedSelector = selector.trim().split(',').map(s => {
@@ -270,10 +249,8 @@ export default class WebComponent extends HTMLElement {
     }
 
     insertChildrenIntoSlot(document) {
-        // Find the slot element
         const slot = document.querySelector('slot');
         if (slot && this.#slot) {
-            // Set the slot's innerHTML to the desired content
             slot.innerHTML = this.#slot;
         }
     }
@@ -284,13 +261,10 @@ export default class WebComponent extends HTMLElement {
 }
 
 function updateElementAttributes(newPointer, oldPointer) {
-    for (let i = 0; i < newPointer.attributes.length; i++) {
-        const newAttr = newPointer.attributes[i];
-        if (!oldPointer.hasAttribute(newAttr.name) || oldPointer.getAttribute(newAttr.name) !== newAttr.value) {
-            oldPointer.setAttribute(newAttr.name, newAttr.value);
-        }
-    }
-    // Remove any attributes that are not present in the new element
+    setNewAttributes(newPointer, oldPointer);
+    removeOldAttributesThatAreNoLongerPresent(oldPointer, newPointer);
+}
+function removeOldAttributesThatAreNoLongerPresent(oldPointer, newPointer) {
     for (let i = 0; i < oldPointer.attributes.length; i++) {
         const oldAttr = oldPointer.attributes[i];
         if (!newPointer.hasAttribute(oldAttr.name)) {
@@ -298,3 +272,13 @@ function updateElementAttributes(newPointer, oldPointer) {
         }
     }
 }
+
+function setNewAttributes(newPointer, oldPointer) {
+    for (let i = 0; i < newPointer.attributes.length; i++) {
+        const newAttr = newPointer.attributes[i];
+        if (!oldPointer.hasAttribute(newAttr.name) || oldPointer.getAttribute(newAttr.name) !== newAttr.value) {
+            oldPointer.setAttribute(newAttr.name, newAttr.value);
+        }
+    }
+}
+
