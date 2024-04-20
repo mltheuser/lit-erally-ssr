@@ -11,7 +11,7 @@ class ListItem extends WebComponent {
     }
 
     static getScriptUrl() {
-        return "src/client/components/list-item.js";
+        return "http://localhost:3000/src/client/components/list-item.js";
     }
 
     handleButtonClick() {

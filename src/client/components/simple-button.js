@@ -1,4 +1,4 @@
-import { css, customElements, WebComponent, html } from '../../webcomponent-lib/crossPlatform/index.js';
+import { css, customElements, WebComponent, html, replace } from '../../webcomponent-lib/crossPlatform/index.js';
 
 import './counter-list.js'
 
@@ -16,7 +16,7 @@ class SimpleButton extends WebComponent {
     };
 
     static getScriptUrl() {
-        return "src/client/components/simple-button.js";
+        return "http://localhost:3000/src/client/components/simple-button.js";
     }
 
     constructor() {
@@ -41,6 +41,10 @@ class SimpleButton extends WebComponent {
               <slot></slot>
               <p>${html`<div onclick=${() => console.log("That was clicked")}>Hello World</div>`}</p>
               <counter-list counts=${counts}></counter-list>
+              <button id="replaceButton" onclick=${() => {
+                console.log("try replacing")
+                replace("#replaceButton", fetch('/buttonClicked').then(response => response.text()))
+              }}>This will replace the element</button>
           `;
     }
 

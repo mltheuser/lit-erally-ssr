@@ -15,7 +15,7 @@ class CounterList extends WebComponent {
     }
 
     static getScriptUrl() {
-        return "src/client/components/counter-list.js";
+        return "http://localhost:3000/src/client/components/counter-list.js";
     }
 
     handleClick() {

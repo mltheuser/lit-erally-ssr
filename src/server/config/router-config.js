@@ -24,4 +24,17 @@ router.get('/', async (ctx) => {
     ctx.body = htmlRender;
 });
 
+router.get('/buttonClicked', async (ctx) => {
+    const htmlString = html`
+        <p>Thanks for clicking</p>
+        <p>I appreciate that</p>
+    `
+    const htmlRender = render(hydrate(htmlString));
+
+    console.log(htmlRender)
+
+    ctx.type = 'text/html';
+    ctx.body = htmlRender;
+});
+
 export default router;
