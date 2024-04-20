@@ -36,7 +36,7 @@ export default class WebComponent extends HTMLElement {
     }
 
     attributeChangedCallback(name, _, newValue) {
-        this[name] = JSONParser.safeJSONParse(newValue);
+        this[name] = JSONParser.safeParse(newValue);
     }
 
     defineProperty(propName) {
@@ -46,7 +46,26 @@ export default class WebComponent extends HTMLElement {
                     return this[`#${propName}`];
                 },
                 set(value) {
+                    const valueString = JSONParser.safeStringify(value)
+                    if (valueString === JSONParser.safeStringify(this[`#${propName}`])) {
+                        return
+                    }
                     this[`#${propName}`] = value;
+                    this.setAttribute(propName, valueString)
+                    this.requestRender();
+                },
+            });
+        }
+    }
+
+    defineState(stateName) {
+        if (!Object.prototype.hasOwnProperty.call(this, stateName)) {
+            Object.defineProperty(this, stateName, {
+                get() {
+                    return this[`#${stateName}`];
+                },
+                set(value) {
+                    this[`#${stateName}`] = value;
                     this.requestRender();
                 },
             });
@@ -59,7 +78,7 @@ export default class WebComponent extends HTMLElement {
         }
 
         for (const [propName, _] of Object.entries(this.constructor.properties)) {
-            const attrValue = JSONParser.safeJSONParse(this.getAttribute(propName));
+            const attrValue = JSONParser.safeParse(this.getAttribute(propName));
             if (attrValue !== null) {
                 this[`#${propName}`] = attrValue;
             }
@@ -74,7 +93,7 @@ export default class WebComponent extends HTMLElement {
         for (const [stateName, stateValue] of Object.entries(this.constructor.state)) {
             if (!Object.prototype.hasOwnProperty.call(this, stateName)) {
                 this[`#${stateName}`] = stateValue;
-                this.defineProperty(stateName);
+                this.defineState(stateName);
             }
         }
     }
@@ -113,7 +132,6 @@ export default class WebComponent extends HTMLElement {
     registerEventListeners(htmlResult) {
         const eventListeners = htmlResult.eventListeners;
         for (let i = 0; i < eventListeners.length; ++i) {
-            console.log(this.innerHTML);
             const target = this.querySelector(`[data-event-id="${i}"]`);
             const { eventName, fn } = eventListeners[i];
 
@@ -135,19 +153,20 @@ export default class WebComponent extends HTMLElement {
     }
 
     doMinimalUpdateToActiveDocument(newDocument) {
-        let newHtmlPointer = newDocument.body;
-        let oldHtmlPointer = this;
+        let newHtmlPointer = newDocument.body; // Body Element (body tag)
+        let oldHtmlPointer = this; // Custom Web Component Element (simple-button)
 
         // Get the tag name and attributes of oldHtmlPointer
         let oldTagName = oldHtmlPointer.tagName.toLowerCase();
-        let oldAttributes = oldHtmlPointer.attributes;
+
+        let newAttributes = Array.from(this.attributes)
 
         // Create a new element with the same tag name
         let newElement = newDocument.createElement(oldTagName);
 
         // Set the attributes of the new element to match those of oldHtmlPointer
-        for (let i = 0; i < oldAttributes.length; i++) {
-            let attr = oldAttributes[i];
+        for (let i = 0; i < newAttributes.length; i++) {
+            let attr = newAttributes[i];
             newElement.setAttribute(attr.name, attr.value);
         }
 

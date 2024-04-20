@@ -25,7 +25,6 @@ class SimpleButton extends WebComponent {
     }
 
     handleClick() {
-        console.log("Clicked");
         this.clickCounter++;
     }
 
@@ -42,7 +41,7 @@ class SimpleButton extends WebComponent {
               <p>${html`<div onclick=${() => console.log("That was clicked")}>Hello World</div>`}</p>
               <counter-list counts=${counts}></counter-list>
               <button id="replaceButton" onclick=${() => {
-                console.log("try replacing")
+                this.text = "something else"
                 replace("#replaceButton", fetch('/buttonClicked').then(response => response.text()))
               }}>This will replace the element</button>
           `;

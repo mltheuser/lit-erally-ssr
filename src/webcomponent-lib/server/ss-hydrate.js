@@ -33,8 +33,6 @@ function getScriptUrlsFromCustomElements(tagNames) {
     tagNames.forEach(tagName => {
         const customElementConstructor = customElements.get(tagName);
         if (customElementConstructor && customElementConstructor.prototype instanceof WebComponent) {
-            console.log(`Valid custom element: ${tagName}`);
-            console.log(customElementConstructor);
             scriptUrls.add(customElementConstructor.getScriptUrl());
         }
     });

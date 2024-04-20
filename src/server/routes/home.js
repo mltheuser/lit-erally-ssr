@@ -18,8 +18,6 @@ router.get('/', async (ctx) => {
     `
     const htmlRender = render(hydrate(htmlString));
 
-    console.log(htmlRender)
-
     ctx.type = 'text/html';
     ctx.body = htmlRender;
 });
@@ -30,8 +28,6 @@ router.get('/buttonClicked', async (ctx) => {
         <p>I appreciate that</p>
     `
     const htmlRender = render(hydrate(htmlString));
-
-    console.log(htmlRender)
 
     ctx.type = 'text/html';
     ctx.body = htmlRender;
