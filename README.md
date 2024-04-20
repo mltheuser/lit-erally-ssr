@@ -172,3 +172,7 @@ static getScriptUrl() {
 #### Rerender
 
 The update process is also as simple stupid as possible. When a new render comes in the html is compared to the old html. If two elements have different tags or are text/comment nodes they are replaced completely. If not the children are checked. If the child elements are still the same number, order and tag wise the parent element remains untouched and the children are now compared one by one. Custom Elements only have their attributes updated (if they are not replaced entierly with all the other children of their parent), their rerender will do the rest.
+
+### Try it out
+
+This project also comes with a basic setup that can be used to create web apps. Clone the project. Then run "npm install" and "npm run start". Now feel free to experiment a bit with the example.
