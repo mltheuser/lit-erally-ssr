@@ -96,3 +96,46 @@ class App extends WebComponent {
     }
 }
 ```
+
+#### Styles
+
+This version of WebComponents does not use shadow roots. Instead everything lives in the same DOM. To still enable custom styling for a component the rules are overspecified.
+
+```js
+p { color: blue };
+
+// The rule above will be transformed into:
+
+html body [... all parent tags] simple-button p { color: blue };
+```
+
+To set the styling use the static styles variable for locality or some global css style sheet.
+
+```js
+static styles = css`p{ color: blue }`;
+```
+
+#### SSR
+
+```js
+router.get('/', async (ctx) => {
+
+    const htmlObject = html`
+        <p>text</p>
+        <div>
+            <simple-button></simple-button>
+        </div>
+    `
+    const htmlString = render(hydrate(htmlObject));
+
+    ctx.type = 'text/html';
+    ctx.body = htmlRender;
+});
+```
+
+To render html with custom components on the server you need the html, hydrate and render functions. Here is a quick breakdown of what each of them does:
+
+- *html* - Checks that the html string is valid by parsing them to a document and takes note of eventlisteners that need to be created.
+- *hydrate* - Adds Script Injections for all Custom Components used. These injections will run once when the client recives the html to make sure all needed scripts are present in the document header.
+- *render* - Expands all custom components by rendering them in their initial state.
+
