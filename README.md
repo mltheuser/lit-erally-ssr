@@ -139,3 +139,36 @@ To render html with custom components on the server you need the html, hydrate a
 - *hydrate* - Adds Script Injections for all Custom Components used. These injections will run once when the client recives the html to make sure all needed scripts are present in the document header.
 - *render* - Expands all custom components by rendering them in their initial state.
 
+#### Slot
+
+To keep it simple these WebComponents don't support named slots. There is one slot for all child elements.
+
+```js
+class CountryBoard extends WebComponent {
+    render() {
+        return html`<slot></slot>`
+    }
+}
+
+class App extends WebComponent {
+    render() {
+        return html`<country-board>
+            <p>Noting to show!</p>
+        </country-board>`
+    }
+}
+```
+
+#### Script URL
+
+For the server side hydration to work we need to be able to find out where to request a components script from. I finally decided that the best tradeoff between simplicity and coupling is achived by providing this url for each WebComponent through it's getScriptUrl() method. This leaves the user a lot of options for abstraction when setting up their framework.
+
+```js
+static getScriptUrl() {
+    return "${serverDomain}/components/simple-button.js";
+}
+```
+
+#### Rerender
+
+The update process is also as simple stupid as possible. When a new render comes in the html is compared to the old html. If two elements have different tags or are text/comment nodes they are replaced completely. If not the children are checked. If the child elements are still the same number, order and tag wise the parent element remains untouched and the children are now compared one by one. Custom Elements only have their attributes updated (if they are not replaced entierly with all the other children of their parent), their rerender will do the rest.
