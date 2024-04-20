@@ -2,7 +2,7 @@
 
 Server Side Rendered WebComponents with lit-like client side state managment and htmx-like client side element replacment.
 
-> This is just an experiment and not indeded for use in an actual project.
+> This is just an experiment and not intended for use in an actual project.
 
 ### How it works
 
