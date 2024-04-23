@@ -210,4 +210,11 @@ The update process is also as simple stupid as possible. When a new render comes
 
 ### Try it out
 
-This project also comes with a basic setup that can be used to create web apps. Clone the project. Then run "npm install" and "npm run start". Now feel free to experiment a bit with the example.
+This project also comes with a basic setup that can be used to create web apps. Clone the project. Then run 
+
+```bash
+npm install
+npm run start
+```
+
+Now feel free to experiment a bit with the example.
