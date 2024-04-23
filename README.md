@@ -97,6 +97,25 @@ class App extends WebComponent {
 }
 ```
 
+#### Signals
+
+To pass data up the element chain you use signals.
+
+```js
+handleClick() {
+    this.signal("messageSignal", {text: "Hello from child"})
+}
+```
+
+This will be passed up the element chain until the document root is reached. To handle a signal in a parent you register a signal handler using the same signal name.
+
+```js
+constructor() {
+    super()
+    this.registerSignalHandler("messageSignal", (data) => { this.dynamicText = data.text })
+}
+```
+
 #### Styles
 
 This version of WebComponents does not use shadow roots. Instead everything lives in the same DOM. To still enable custom styling for a component the rules are overspecified.
@@ -158,6 +177,22 @@ class App extends WebComponent {
     }
 }
 ```
+
+#### xReplace
+
+I added some helper function to make it easier to add/replace html using the server.
+
+```js
+xReplace(selectorString or HTMLElement, String or Promise<String>)
+```
+
+Here is a usage example
+
+```js
+xReplace("#replaceButton", fetch('/buttonClicked').then(response => response.text()))
+```
+
+There are also xAppend(target, source) and xPrepend(target, source) for adding the new html before or after the target.
 
 #### Script URL
 
