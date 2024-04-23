@@ -1,4 +1,4 @@
-import { css, customElements, WebComponent, html, replace } from '../../webcomponent-lib/crossPlatform/index.js';
+import { css, customElements, WebComponent, html, xReplace, xAppend } from '../../webcomponent-lib/crossPlatform/index.js';
 
 import './counter-list.js'
 
@@ -42,7 +42,7 @@ class SimpleButton extends WebComponent {
               <counter-list counts=${counts}></counter-list>
               <button id="replaceButton" onclick=${() => {
                 this.text = "something else"
-                replace("#replaceButton", fetch('/buttonClicked').then(response => response.text()))
+                xReplace("#replaceButton", fetch('/buttonClicked').then(response => response.text()))
               }}>This will replace the element</button>
           `;
     }
