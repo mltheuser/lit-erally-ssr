@@ -1,6 +1,6 @@
 ## Lit-erally SSR
 
-Server Side Rendered WebComponents with lit-like client side state managment and htmx-like client side element replacment.
+Server Side Rendered WebComponents with lit-like client side state managment and htmx-like client side element replacement.
 
 > This is just an experiment and not intended for use in an actual project.
 
