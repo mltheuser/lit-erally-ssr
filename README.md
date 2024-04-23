@@ -84,7 +84,7 @@ class CountryBoard extends WebComponent {
     };
     render() {
         return html`<ul>
-            ${this.listOfCountries.map(countryCode => html`<li>countryCode</li>`)}
+            ${this.listOfCountries.map(countryCode => html`<li>${countryCode}</li>`)}
         </ul>`
     }
 }
