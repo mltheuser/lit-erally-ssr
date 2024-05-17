@@ -9,7 +9,7 @@ Server Side Rendered WebComponents with lit-like client side state managment and
 Here is a simple example for a custom WebComponent. It creates a button and a counter for the amount of times the button was clicked.
 
 ```js
-import { css, customElements, WebComponent, html, replace } from 'lit-erally-ssr';
+import { css, customElements, WebComponent, html } from 'lit-erally-ssr';
 
 class SimpleButton extends WebComponent {
 
