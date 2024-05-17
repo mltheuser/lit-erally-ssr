@@ -97,7 +97,7 @@ class App extends WebComponent {
 }
 ```
 
-"isListOfStrings" or "isString" in these examples are validator functions. They have the signature (value: any) => bool and are run on every value that you try to pass to the validated property. If such a test fails an Error is thrown. The function is therby run on the deserialized form of your value. You can easily create your own validations by simply adhearing to the required signature:
+"isListOfStrings" or "isString" in these examples are validator functions. They have the signature (value: any) => bool and are run on every value that you try to pass to the validated property. If such a test fails an Error is thrown. The function is thereby run on the deserialized form of your value. You can easily create your own validations by adhearing to the required signature:
 
 ```js
 function isHighNumber(value) {
