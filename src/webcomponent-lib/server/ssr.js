@@ -1,34 +1,30 @@
 import WebComponent from "../crossPlatform/web-component.js";
 import { customElements } from "../crossPlatform/html-elements.js"
 
-export default function render(document) {
+export default async function render(document) {
     const rootElement = document.documentElement;
 
-    // Extract child elements and their children recursively
-    const elements = extractChildElementsRecursively(rootElement);
-
-    // Render custom elements and replace them with dynamic versions
-    elements.forEach(element => {
-        const tagName = element.tagName.toLowerCase();
-
-        const customElementConstructor = customElements.get(tagName);
-        if (customElementConstructor && customElementConstructor.prototype instanceof WebComponent) {
-            renderCustomElement(element, customElementConstructor);
-        }
-    });
+    // Render custom elements recursively
+    await renderCustomElementsRecursively(rootElement);
 
     return rootElement.innerHTML;
 }
 
-function extractChildElementsRecursively(element) {
-    const elements = [...element.children];
-    elements.forEach(child => {
-        elements.push(...extractChildElementsRecursively(child));
-    });
-    return elements;
+async function renderCustomElementsRecursively(element) {
+    const tagName = element.tagName.toLowerCase();
+
+    const customElementConstructor = customElements.get(tagName);
+    if (customElementConstructor && customElementConstructor.prototype instanceof WebComponent) {
+        element = await renderCustomElement(element, customElementConstructor);
+    }
+
+    const childElements = [...element.children];
+    for (const child of childElements) {
+        await renderCustomElementsRecursively(child);
+    }
 }
 
-function renderCustomElement(element, customElementConstructor) {
+async function renderCustomElement(element, customElementConstructor) {
     const dynamicElementInstance = new customElementConstructor();
 
     dynamicElementInstance.innerHTML = element.innerHTML;
@@ -41,9 +37,8 @@ function renderCustomElement(element, customElementConstructor) {
         dynamicElementInstance.setAttribute(attribute.name, attribute.value);
     }
 
-    // Assign the new element to the parent node
-    element.parentNode.insertBefore(dynamicElementInstance, element.nextSibling);
+    // Replace the old element with the new element
+    element.parentNode.replaceChild(dynamicElementInstance, element);
 
-    // Remove the old element from the DOM tree
-    element.remove();
+    return dynamicElementInstance
 }

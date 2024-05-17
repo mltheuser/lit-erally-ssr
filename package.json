@@ -24,6 +24,7 @@
   "dependencies": {
     "@koa/router": "^12.0.1",
     "@lit-labs/ssr": "^3.2.2",
+    "axios": "^1.6.8",
     "html-element": "^2.3.1",
     "jsdom": "^24.0.0",
     "tsx": "^4.7.2"

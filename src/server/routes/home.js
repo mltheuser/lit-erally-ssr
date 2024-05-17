@@ -16,7 +16,9 @@ router.get('/', async (ctx) => {
             </simple-button>
         </div>
     `
-    const htmlRender = render(hydrate(htmlString));
+    const htmlRender = await render(await hydrate(htmlString));
+
+    console.log(htmlRender)
 
     ctx.type = 'text/html';
     ctx.body = htmlRender;
@@ -27,7 +29,7 @@ router.get('/buttonClicked', async (ctx) => {
         <p>Thanks for clicking</p>
         <p>I appreciate that</p>
     `
-    const htmlRender = render(hydrate(htmlString));
+    const htmlRender = await render(await hydrate(htmlString));
 
     ctx.type = 'text/html';
     ctx.body = htmlRender;

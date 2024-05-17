@@ -2,12 +2,16 @@ import { css, customElements, WebComponent, html, xReplace, xAppend } from '../.
 
 import './counter-list.js'
 
+function isString(value) {
+    return true
+}
+
 class SimpleButton extends WebComponent {
 
     static styles = css`p{ color: blue }`;
 
     static properties = {
-        text: String,
+        text: isString,
     };
 
     static state = {

@@ -2,12 +2,16 @@ import { css, customElements, WebComponent, html } from '../../webcomponent-lib/
 
 import './list-item.js'
 
+function thisNot(value) {
+    return true;
+}
+
 class CounterList extends WebComponent {
 
     static styles = css`p { color: red }`;
 
     static properties = {
-        counts: String,
+        counts: thisNot,
     };
 
     static state = {

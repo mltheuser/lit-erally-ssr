@@ -7,6 +7,35 @@ function assert(condition, message) {
     }
 }
 
+function isValidValidatorFunction(f) {
+    /*
+    f is valid if it is a function with the signature (any) => boolean
+    */
+
+    // Check if f is a function
+    if (typeof f !== 'function') {
+        return false;
+    }
+
+    // Check if f takes exactly one parameter
+    if (f.length !== 1) {
+        return false;
+    }
+
+    // Check if f returns a boolean
+    try {
+        const result = f(null);
+        if (typeof result !== 'boolean') {
+            return false;
+        }
+    } catch (error) {
+        return false;
+    }
+
+    // If all checks pass, f is a valid validator function
+    return true;
+}
+
 export default class WebComponent extends HTMLElement {
 
     #signalHandlers = {};
@@ -39,7 +68,7 @@ export default class WebComponent extends HTMLElement {
         this[name] = JSONParser.safeParse(newValue);
     }
 
-    defineProperty(propName) {
+    defineProperty(propName, validatorFunction) {
         if (!Object.prototype.hasOwnProperty.call(this, propName)) {
             Object.defineProperty(this, propName, {
                 get() {
@@ -50,6 +79,12 @@ export default class WebComponent extends HTMLElement {
                     if (valueString === JSONParser.safeStringify(this[`#${propName}`])) {
                         return
                     }
+
+                    if (!validatorFunction(value)) {
+                        throw Error("validation failed.")
+                    }
+
+
                     this[`#${propName}`] = value;
                     this.setAttribute(propName, valueString)
                     this.requestRender();
@@ -77,12 +112,17 @@ export default class WebComponent extends HTMLElement {
             return
         }
 
-        for (const [propName, _] of Object.entries(this.constructor.properties)) {
+        for (const [propName, validatorFunction] of Object.entries(this.constructor.properties)) {
+
+            if (!isValidValidatorFunction(validatorFunction)) {
+                throw Error("Bad validator func.")
+            }
+
             const attrValue = JSONParser.safeParse(this.getAttribute(propName));
             if (attrValue !== null) {
                 this[`#${propName}`] = attrValue;
             }
-            this.defineProperty(propName);
+            this.defineProperty(propName, validatorFunction);
         }
     }
 
