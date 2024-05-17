@@ -16,7 +16,7 @@ class SimpleButton extends WebComponent {
     static styles = css`p{ color: blue }`;
 
     static properties = {
-        prompt: String,
+        prompt: isString,
     };
 
     static state = {
@@ -63,7 +63,7 @@ handleClick() {
 
 ```js
 static properties = {
-    prompt: String,
+    prompt: isString,
 };
 ```
 
@@ -80,7 +80,7 @@ This is only possible because properties are restricted to be strings, numbers o
 ```js
 class CountryBoard extends WebComponent {
     static properties = {
-        listOfCountries: Array, // <-- The type is not used right now, I might remove it.
+        listOfCountries: isListOfStrings,
     };
     render() {
         return html`<ul>
@@ -96,6 +96,8 @@ class App extends WebComponent {
     }
 }
 ```
+
+"isListOfStrings" or "isString" in these examples are validator functions. They have the signature (value: any) => bool and are run on every value that you try to pass to the validated property. If such a test fails an Error is thrown.
 
 #### Signals
 
